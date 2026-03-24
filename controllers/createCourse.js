@@ -4,47 +4,49 @@ const USER = require("../models/User")
 const {imageuploadTo_Cloundinary} = require("../utills/fileUploader")
 require("dotenv").config()
 
-//create a course 
+// Create course (instructor only)
 exports.createCourse = async (req , res)=>{
     try{
-        //get data (coursename , description , what you will learn, price , tag)
         const {courseName,courseDescription,whatyouWillLearn,price,category} = req.body
-        
-        //thumbnail
         const thumbnail = req.files.thumbnailImage
 
-        //validation
+        // Validate required fields
         if(!courseName || !courseDescription || !whatyouWillLearn || !price || !category || !thumbnail){
             return res.status(400).json({
                 success:false,
-                message:"please fill the required."
+                message:"All fields required"
             })
         }
 
-        //get instructor details
+        // Verify instructor authorization
         const instructor_id = req.user.id
-        console.log(instructor_id)
+        const instructorDetails = await USER.findById(instructor_id)
+        if (!instructorDetails) {
+            return res.status(404).json({
+                success: false,
+                message: "Instructor not found"
+            })
+        }
+        if (instructorDetails.accountType !== "Instructor") {
+            return res.status(403).json({
+                success: false,
+                message: "Only instructors can create courses"
+            })
+        }
 
-        //TODO:  babbar had fetched the id in DB to get instructor 
-        // Object id which could be same so no need to fetch agaian
-
-        //validate instructor
-
-        //get tag details
-        //validate tags details
+        // Validate category
         const categoryDetails = await Category.findById(category)
         if(!categoryDetails){
             return res.status(404).json({
                 success:false,
-                message:"Course Category not found, retry"
+                message:"Category not found"
             })
         }
-        console.log(categoryDetails)
 
-        //upload to cloudinary
+        // Upload thumbnail to Cloudinary
         const uploadedFile = await imageuploadTo_Cloundinary(thumbnail,process.env.FOLDER_NAME)
-        console.log(uploadedFile)
-        //create the course
+
+        // Create course
         const createdCourse = await COURSE.create({  
                     courseName: courseName,
                     courseDescription: courseDescription,
@@ -57,20 +59,16 @@ exports.createCourse = async (req , res)=>{
                     rattingAndReview:null,
                     studentEnrolled:null
                 })
-                console.log(createdCourse)
 
-        //update the user for the updated course add
-
+        // Update instructor's courses list
         const updatedUser = await USER.findByIdAndUpdate({_id:instructor_id},
-                                                            {
-                                                                courses:createdCourse._id
-                                                            },
+                                                            {courses:createdCourse._id},
                                                             {new:true}
         )
-        //return response
+
         return res.status(200).json({
             success:true,
-            message:"Course created Successfully",
+            message:"Course created successfully",
             updatedUser
         })
     }catch(error){
