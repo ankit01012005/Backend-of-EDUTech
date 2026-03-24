@@ -23,6 +23,7 @@ router.post("/login", Login)
 router.post("/signup", SignUp)
 
 // Route for sending OTP to the user's email
+
 router.post("/sendotp", GenerateOTP)
 
 // Route for Changing the password

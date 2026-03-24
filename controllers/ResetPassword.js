@@ -3,78 +3,70 @@ const {MailSender} = require("../utills/OtpRequired")
 const bcrypt = require("bcrypt")
 const crypto = require("crypto")
 
-//Reset password 
-//1. part sending mail for ui of updating pwd
-
+// Generate reset password token and send email
 exports.resetPasswordToken = async (req , res)=>{
-
     try{
-        //fetch email 
         const email = req.body.email 
 
-        //validate and verify mail
+        // Validate email
         if(!email){
-            return res.json({
+            return res.status(400).json({
                 success:false,
-                message:"Enter the mail first"
+                message:"Email required"
             })
         }
 
+        // Verify user exists
         const user = await USER.findOne({email})
         if(!user){
-            return res.json({
+            return res.status(404).json({
                 success:false,
-                message:"Mail not resistered with us"
+                message:"User not found"
             })
         }
-        console.log(user)
 
-        //generate specifics link token
+        // Generate reset token
         const token = crypto.randomUUID()
-        //update token and expires time  in user model
+        
+        // Update user with token and expiration
         const updatedUser = await USER.findOneAndUpdate({email:email},
                                                             {
                                                                 token:token,
                                                                 expiresIn:Date.now()+5*60*1000
                                                             },
-                                                            {
-                                                                new:true
-                                                            }
-                                                        )
-        //create URL
-        const URL = `http://localhost:3000/update-password${token}`
+                                                            {new:true}
+        )
 
-        //send mail
-        await MailSender(email,"Reset Password Link",`Link  : ${URL}`)
+        // Generate reset URL
+        const URL = `http://localhost:3000/update-password/${token}`
 
-        //return response
+        // Send reset link via email
+        await MailSender(email,"Reset Password Link",`Reset Link: ${URL}`)
+
         res.status(200).json({
-
             success:true,
-            message:"Reset pass link sent to Email"
+            message:"Reset link sent to email"
         })
        
     }catch(error){
-        console.log(error)
         res.status(500).json({
             success:false,
-            message:"Error while Reset pass mail sending"
+            message:"Error sending reset link"
         })
     }
 }
 
-//2. updating the pwd in db
+// Update password with reset token
 
 exports.resetPassword = async (req , res)=>{
     try{
-        //fetch data
         const {password,cfrm_password,token} = req.body
 
-        //validation of data
+        // Validate password fields
         if(!password || !cfrm_password){
-            return res.json({
+            return res.status(400).json({
                 success:false,
-                message:"fill the required details"
+                message:"Password fields required"
             })
         }
         if(password !== cfrm_password){

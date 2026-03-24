@@ -3,41 +3,28 @@ const COURSE = require("../models/Course")
 
 exports.createSection = async (req , res)=>{
  try{
-        //get the data
         const {name,courseId} = req.body
-        console.log(name , courseId)
 
-
-        //validate the data
+        // Validate required fields
         if(!name || !courseId){
-            return res.status(401).json({
-                success:true,
-                message:"Please enter the name of the section"
+            return res.status(400).json({
+                success:false,
+                message:"Section name and course ID required"
             })
         }
-        const Subsection=null
 
+        // Create section
+        const created_Section = await SECTION.create({name, Subsection:null})
 
-        //create the section
-        const created_Section = await SECTION.create({name,Subsection})
-        console.log("created section")
-        console.log(created_Section)
-
-
-        //update in the course
+        // Update course with new section
         const updated_in_course = await COURSE.findByIdAndUpdate(courseId,
-                                                                    {
-                                                                        $push:{
-                                                                            courseContent:created_Section._id
-                                                                        }
-                                                                    },
+                                                                    {$push:{courseContent:created_Section._id}},
                                                                     {new:true}
-                                                                 )//.populate("courseContent")
-        //return res
-        console.log(updated_in_course)
+        )
+
         return res.status(200).json({
             success:true,
-            message:"section created successfully"
+            message:"Section created successfully"
         })
 
  }catch(error){
@@ -52,25 +39,22 @@ exports.createSection = async (req , res)=>{
 
 exports.updateSection = async (req , res)=>{
     try{
-            //get new name and id of section
         const{sectionName,sectionId} = req.body
+
+        // Validate required fields
         if(!sectionName || !sectionId){
-            return res.status(401).json({
+            return res.status(400).json({
                 success:false,
-                message:"name and section id are required"
+                message:"Section name and ID required"
             })
         }
 
-        //update the section
-        updatedSection = await SECTION.findByIdAndUpdate(sectionId,
-                                                                    {
-                                                                        name:sectionName
-                                                                    },
+        // Update section
+        const updatedSection = await SECTION.findByIdAndUpdate(sectionId,
+                                                                    {name:sectionName},
                                                                     {new:true}
-                                                        )
+        )
 
-
-        //send response
         return res.status(200).json({
             success:true,
             message:"Section updated successfully"
@@ -86,18 +70,13 @@ exports.updateSection = async (req , res)=>{
     }
 }
 
-//delete the sectin
-
+// Delete section
 exports.deleteSection = async (req , res)=>{
     try{
-        //get the id through params //:id
         const{sectionId , courseId} = req.body
-        console.log(sectionId)
 
-
-        //delete the section
+        // Delete section
         await SECTION.findByIdAndDelete(sectionId)
-        console.log("deleted the section")
         //delete from course
         await COURSE.findByIdAndUpdate(courseId,
                                         {$pull:{courseContent:sectionId}},

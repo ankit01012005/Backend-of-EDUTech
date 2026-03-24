@@ -49,6 +49,20 @@ const userSchema = new mongoose.Schema({
     image:{
         type:String,
         // required:true
+    },
+    // ============================================================================
+    // 🔧 MODIFICATION #2-E: ACCOUNT DELETION SCHEDULING FIELDS
+    // Added: Fields to support scheduled account deletion with grace period
+    // Date: November 18, 2025
+    // Purpose: Allow users to cancel deletion within grace period
+    // ============================================================================
+    isDeleteScheduled:{
+        type:Boolean,
+        default:false
+    },
+    scheduledDeletionDate:{
+        type:Date,
+        default:null
     }
 
 })
